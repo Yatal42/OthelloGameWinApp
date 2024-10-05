@@ -1,266 +1,100 @@
-﻿using System;
-using System.Collections.Generic;
-using Ex02.ConsoleUtils; // Assuming this namespace contains Screen.Clear() method
+﻿using System.Collections.Generic;
+using System.Windows.Forms;
 
-namespace Othello
+namespace OthelloWinForms
 {
-    class GameManager
+    public class GameManager
     {
-        private char[,] m_GameArray;
-        private Board m_Board;
-        private Player m_Player1;
-        private Player m_Player2;
-        private int m_GameArraySize;
-        private bool m_IsComputer;
-        private int m_BoardGameSize;
+        private readonly Board r_Board;
+        private readonly Player r_Player1;
+        private readonly Player r_Player2;
+        private Player m_CurrentPlayer;
         private bool m_GameOver = false;
 
-        public GameManager(int i_BoardSize, string i_Player1Name, string i_Player2Name)
+        public GameManager(int i_BoardSize, bool i_IsAgainstComputer)
         {
-            m_BoardGameSize = i_BoardSize;
-            m_Board = new Board(i_BoardSize);
-            m_Player1 = new Player(i_Player1Name, 'O');
-            m_Player1.IsMyTurn = true;
+            r_Board = new Board(i_BoardSize);
+            r_Player1 = new Player("Yellow", 'O');
+            r_Player2 = new Player("Red", 'X', i_IsAgainstComputer);
 
-            if (string.IsNullOrEmpty(i_Player2Name))
-            {
-                m_IsComputer = true;
-                i_Player2Name = "Computer"; // Set name for computer
-            }
-
-            m_Player2 = new Player(i_Player2Name, 'X', m_IsComputer);
-            SetGameArray(i_BoardSize);
+            m_CurrentPlayer = r_Player1;
+            m_CurrentPlayer.IsMyTurn = true;
         }
 
-        public void SetGameArray(int i_BoardSize)
-        {
-            m_GameArraySize = i_BoardSize;
-            m_GameArray = new char[i_BoardSize, i_BoardSize];
+        public Board GameBoard => r_Board;
+        public Player Player1 => r_Player1;
+        public Player Player2 => r_Player2;
+        public Player CurrentPlayer => m_CurrentPlayer;
+        public bool IsGameOver => m_GameOver;
 
-            for (int rowIndex = 0; rowIndex < i_BoardSize; rowIndex++)
-            {
-                for (int colIndex = 0; colIndex < i_BoardSize; colIndex++)
-                {
-                    m_GameArray[rowIndex, colIndex] = '*';
-                }
-            }
-
-            int boardMiddle = i_BoardSize / 2 - 1;
-            m_GameArray[boardMiddle, boardMiddle] = m_Player1.PlayerDisc;
-            m_GameArray[boardMiddle, boardMiddle + 1] = m_Player2.PlayerDisc;
-            boardMiddle++;
-            m_GameArray[boardMiddle, boardMiddle - 1] = m_Player2.PlayerDisc;
-            m_GameArray[boardMiddle, boardMiddle] = m_Player1.PlayerDisc;
-        }
-
-        public Board GetBoard => m_Board;
-
-        public void UpdateGameArray(int rowIndex, int colIndex, Player i_CurrentPlayer, Player i_OtherPlayer)
-        {
-            if (m_GameArray[rowIndex, colIndex] == i_OtherPlayer.PlayerDisc)
-            {
-                i_OtherPlayer.PlayerScore--;
-            }
-
-            i_CurrentPlayer.PlayerScore++;
-            m_GameArray[rowIndex, colIndex] = i_CurrentPlayer.PlayerDisc;
-        }
-
-        public static bool CheckIfBoardSizeValid(string i_UserInput)
-        {
-            int boardSize;
-            return int.TryParse(i_UserInput, out boardSize) && (boardSize == 6 || boardSize == 8);
-        }
-
-        public void StartGame()
-        {
-            m_GameOver = false;
-            Screen.Clear();
-            GameUI.PrintBoard(m_Board);
-
-            while (!m_GameOver)
-            {
-                if (checkGameOver())
-                {
-                    declareWinner();
-                    m_GameOver = true;
-                    break;
-                }
-
-                Player currentPlayer = m_Player1.IsMyTurn ? m_Player1 : m_Player2;
-                if (!playerHasValidMoves(currentPlayer))
-                {
-                    switchTurns(currentPlayer);
-                    continue;
-                }
-
-                Console.WriteLine($"It's {currentPlayer.PlayerName}'s turn.");
-
-                if (!m_GameOver)
-                {
-                    int rowIndex = -1;
-                    int colIndex = -1;
-
-                    if (!currentPlayer.IsComputer)
-                    {
-                        bool playerChoseToLeave = false;
-                        string userInput;
-                        (playerChoseToLeave, userInput) = GameUI.RequestForMoveOrExit(currentPlayer);
-                        if (playerChoseToLeave && userInput == "Q")
-                        {
-                            m_GameOver = true;
-                            break;
-                        }
-                        else
-                        {
-                            (rowIndex, colIndex) = currentPlayer.GetMove(userInput);
-                        }
-                    }
-                    else
-                    {
-                        List<(int rowIndex, int colIndex)> validMoves = validMovesGenerator(currentPlayer);
-                        (rowIndex, colIndex) = currentPlayer.GetMove("", validMoves);
-                    }
-
-                    if (rowIndex != -1 && colIndex != -1 && IsValidMove(rowIndex, colIndex, currentPlayer))
-                    {
-                        PerformFlips(rowIndex, colIndex, currentPlayer);
-                        m_Board.PlaceDisc(rowIndex, colIndex, currentPlayer.PlayerDisc);
-
-                        Player otherPlayer = currentPlayer == m_Player1 ? m_Player2 : m_Player1;
-
-                        UpdateGameArray(rowIndex, colIndex, currentPlayer, otherPlayer);
-                        Screen.Clear();
-                        GameUI.PrintBoard(m_Board);
-
-                        if (currentPlayer.IsComputer)
-                        {
-                            Console.WriteLine($"Computer placed a disc at ({(char)('A' + colIndex)}{rowIndex + 1}).");
-                        }
-
-                        switchTurns(currentPlayer);
-                    }
-                    else
-                    {
-                        Console.WriteLine("Invalid move! Please choose a valid move.");
-                    }
-                }
-            }
-        }
-
-        private List<(int rowIndex, int colIndex)> validMovesGenerator(Player i_CurrentPlayer)
+        public List<(int, int)> GetValidMoves(Player i_Player)
         {
             List<(int, int)> validMoves = new List<(int, int)>();
-            for (int row = 0; row < m_GameArraySize; row++)
+
+            for (int row = 0; row < r_Board.Size; row++)
             {
-                for (int col = 0; col < m_GameArraySize; col++)
+                for (int col = 0; col < r_Board.Size; col++)
                 {
-                    if (IsValidMove(row, col, i_CurrentPlayer))
+                    if (IsValidMove(row, col, i_Player))
                     {
                         validMoves.Add((row, col));
                     }
                 }
             }
+
             return validMoves;
         }
 
-        private bool playerHasValidMoves(Player i_Player)
+        public bool IsValidMove(int i_Row, int i_Col, Player i_Player)
         {
-            bool hasValidMove = false;
-            for (int row = 0; row < m_BoardGameSize && !hasValidMove; row++)
+            if (!r_Board.IsInBounds(i_Row, i_Col) || r_Board.BoardArray[i_Row, i_Col] != '*')
             {
-                for (int col = 0; col < m_BoardGameSize && !hasValidMove; col++)
+                return false;
+            }
+
+            char opponentDisc = i_Player.Disc == 'O' ? 'X' : 'O';
+
+            for (int deltaRow = -1; deltaRow <= 1; deltaRow++)
+            {
+                for (int deltaCol = -1; deltaCol <= 1; deltaCol++)
                 {
-                    if (m_GameArray[row, col] == '*' && IsValidMove(row, col, i_Player))
+                    if (deltaRow != 0 || deltaCol != 0)
                     {
-                        hasValidMove = true;
-                    }
-                }
-            }
-            return hasValidMove;
-        }
-
-        private void switchTurns(Player i_CurrentPlayer)
-        {
-            Player otherPlayer = i_CurrentPlayer == m_Player1 ? m_Player2 : m_Player1;
-
-            if (!playerHasValidMoves(otherPlayer))
-            {
-                if (!playerHasValidMoves(i_CurrentPlayer))
-                {
-                    Console.WriteLine("No valid moves for either player. Game Over.");
-                    declareWinner();
-                    m_GameOver = true;
-                }
-                else
-                {
-                    Console.WriteLine($"{otherPlayer.PlayerName} has no valid moves. {i_CurrentPlayer.PlayerName} will play again.");
-                }
-            }
-            else
-            {
-                i_CurrentPlayer.IsMyTurn = false;
-                otherPlayer.IsMyTurn = true;
-            }
-        }
-
-        public bool IsValidMove(int i_Row, int i_Col, Player i_CurrentPlayer)
-        {
-            bool isValid = false;
-
-            if (i_Row != -1 && i_Col != -1 && m_GameArray[i_Row, i_Col] == '*')
-            {
-                for (int i = -1; i <= 1; i++)
-                {
-                    for (int j = -1; j <= 1; j++)
-                    {
-                        if (!(i == 0 && j == 0) && checkAndFlipInDirection(i_CurrentPlayer.PlayerDisc, i_Row, i_Col, i, j, false))
+                        if (CheckDirection(i_Row, i_Col, deltaRow, deltaCol, i_Player.Disc, opponentDisc, false))
                         {
-                            isValid = true;
+                            return true;
                         }
                     }
                 }
             }
 
-            return isValid;
+            return false;
         }
 
-        private bool checkAndFlipInDirection(char i_PlayerDisc, int i_Row, int i_Col,
-                                             int i_RowScanDirection, int i_ColScanDirection,
-                                             bool shouldFlip)
+        private bool CheckDirection(int i_Row, int i_Col, int i_DeltaRow, int i_DeltaCol, char i_PlayerDisc, char i_OpponentDisc, bool i_ShouldFlip)
         {
-            int currentRow = i_Row + i_RowScanDirection;
-            int currentCol = i_Col + i_ColScanDirection;
-            char opponentDisc = i_PlayerDisc == 'O' ? 'X' : 'O';
-            bool foundOpponent = false;
-            bool isValid = false;
+            int row = i_Row + i_DeltaRow;
+            int col = i_Col + i_DeltaCol;
+            bool hasOpponentBetween = false;
 
-            while (currentRow >= 0 && currentRow < m_BoardGameSize &&
-                   currentCol >= 0 && currentCol < m_BoardGameSize)
+            while (r_Board.IsInBounds(row, col))
             {
-                if (m_GameArray[currentRow, currentCol] == opponentDisc)
+                char currentDisc = r_Board.BoardArray[row, col];
+
+                if (currentDisc == i_OpponentDisc)
                 {
-                    foundOpponent = true;
+                    hasOpponentBetween = true;
                 }
-                else if (m_GameArray[currentRow, currentCol] == i_PlayerDisc && foundOpponent)
+                else if (currentDisc == i_PlayerDisc)
                 {
-                    isValid = true;
-                    if (shouldFlip)
+                    if (hasOpponentBetween)
                     {
-                        int flipRow = i_Row + i_RowScanDirection;
-                        int flipCol = i_Col + i_ColScanDirection;
-
-                        while (flipRow != currentRow || flipCol != currentCol)
+                        if (i_ShouldFlip)
                         {
-                            m_Board.FlipDiscs(flipRow, flipCol, i_PlayerDisc);
-                            Player currentPlayer = i_PlayerDisc == 'O' ? m_Player1 : m_Player2;
-                            Player otherPlayer = i_PlayerDisc == 'O' ? m_Player2 : m_Player1;
-                            UpdateGameArray(flipRow, flipCol, currentPlayer, otherPlayer);
-                            flipRow += i_RowScanDirection;
-                            flipCol += i_ColScanDirection;
+                            FlipDiscsInDirection(i_Row, i_Col, i_DeltaRow, i_DeltaCol, i_PlayerDisc);
                         }
+                        return true;
                     }
-
                     break;
                 }
                 else
@@ -268,74 +102,111 @@ namespace Othello
                     break;
                 }
 
-                currentRow += i_RowScanDirection;
-                currentCol += i_ColScanDirection;
+                row += i_DeltaRow;
+                col += i_DeltaCol;
             }
 
-            return isValid;
+            return false;
         }
 
-        public void PerformFlips(int i_Row, int i_Col, Player i_CurrentPlayer)
+        private void FlipDiscsInDirection(int i_Row, int i_Col, int i_DeltaRow, int i_DeltaCol, char i_PlayerDisc)
         {
-            for (int i = -1; i <= 1; i++)
+            int row = i_Row + i_DeltaRow;
+            int col = i_Col + i_DeltaCol;
+
+            while (r_Board.BoardArray[row, col] != i_PlayerDisc)
             {
-                for (int j = -1; j <= 1; j++)
-                {
-                    if (!(i == 0 && j == 0))
-                    {
-                        checkAndFlipInDirection(i_CurrentPlayer.PlayerDisc, i_Row, i_Col, i, j, true);
-                    }
-                }
+                r_Board.PlaceDisc(row, col, i_PlayerDisc);
+                UpdateScores(i_PlayerDisc);
+                row += i_DeltaRow;
+                col += i_DeltaCol;
             }
         }
 
-        private bool checkGameOver()
+        private void UpdateScores(char i_PlayerDisc)
         {
-            bool gameOver = true;
-
-            for (int row = 0; row < m_BoardGameSize; row++)
+            if (i_PlayerDisc == r_Player1.Disc)
             {
-                for (int col = 0; col < m_BoardGameSize; col++)
-                {
-                    if (m_GameArray[row, col] == '*' && (IsValidMove(row, col, m_Player1) || IsValidMove(row, col, m_Player2)))
-                    {
-                        gameOver = false;
-                        break;
-                    }
-                }
-                if (!gameOver)
-                {
-                    break;
-                }
-            }
-
-            return gameOver;
-        }
-
-        private void declareWinner()
-        {
-            if (m_Player1.PlayerScore > m_Player2.PlayerScore)
-            {
-                Console.WriteLine($"{m_Player1.PlayerName} wins with {m_Player1.PlayerScore} points! {m_Player2.PlayerName} has {m_Player2.PlayerScore} points.");
-            }
-            else if (m_Player2.PlayerScore > m_Player1.PlayerScore)
-            {
-                Console.WriteLine($"{m_Player2.PlayerName} wins with {m_Player2.PlayerScore} points! {m_Player1.PlayerName} has {m_Player1.PlayerScore} points.");
+                r_Player1.Score++;
+                r_Player2.Score--;
             }
             else
             {
-                Console.WriteLine($"The game is a tie! Both players have {m_Player2.PlayerScore} points.");
+                r_Player1.Score--;
+                r_Player2.Score++;
             }
         }
 
-        public void ReinitializeBoard()
+        public void MakeMove(int i_Row, int i_Col)
         {
-            m_Board.InitializeBoard(m_BoardGameSize, true);
-            SetGameArray(m_BoardGameSize);
-            m_Player1.PlayerScore = 2;
-            m_Player2.PlayerScore = 2;
-            m_Player1.IsMyTurn = true;
-            m_Player2.IsMyTurn = false;
+            char opponentDisc = m_CurrentPlayer.Disc == 'O' ? 'X' : 'O';
+            bool validMove = false;
+
+            for (int deltaRow = -1; deltaRow <= 1; deltaRow++)
+            {
+                for (int deltaCol = -1; deltaCol <= 1; deltaCol++)
+                {
+                    if (deltaRow != 0 || deltaCol != 0)
+                    {
+                        if (CheckDirection(i_Row, i_Col, deltaRow, deltaCol, m_CurrentPlayer.Disc, opponentDisc, true))
+                        {
+                            validMove = true;
+                        }
+                    }
+                }
+            }
+
+            if (validMove)
+            {
+                r_Board.PlaceDisc(i_Row, i_Col, m_CurrentPlayer.Disc);
+                m_CurrentPlayer.Score++;
+            }
+        }
+
+        public void SwitchTurns()
+        {
+            Player otherPlayer = m_CurrentPlayer == r_Player1 ? r_Player2 : r_Player1;
+
+            if (GetValidMoves(otherPlayer).Count > 0)
+            {
+                m_CurrentPlayer.IsMyTurn = false;
+                m_CurrentPlayer = otherPlayer;
+                m_CurrentPlayer.IsMyTurn = true;
+            }
+            else if (GetValidMoves(m_CurrentPlayer).Count > 0)
+            {
+                MessageBox.Show($"{otherPlayer.Name} has no valid moves. {m_CurrentPlayer.Name} plays again.", "No Valid Moves", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+            else
+            {
+                m_GameOver = true;
+            }
+        }
+
+        public Player GetWinner()
+        {
+            if (r_Player1.Score > r_Player2.Score)
+            {
+                return r_Player1;
+            }
+            else if (r_Player2.Score > r_Player1.Score)
+            {
+                return r_Player2;
+            }
+            else
+            {
+                return null; 
+            }
+        }
+
+        public void ResetGame()
+        {
+            r_Board.InitializeBoard();
+            r_Player1.Score = 2;
+            r_Player2.Score = 2;
+            m_CurrentPlayer = r_Player1;
+            m_CurrentPlayer.IsMyTurn = true;
+            m_GameOver = false;
         }
     }
 }

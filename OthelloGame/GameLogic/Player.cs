@@ -1,88 +1,61 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace Othello
+namespace OthelloWinForms
 {
-    class Player
+    public class Player
     {
-        private bool m_IsMyTurn = false;
         private string m_Name;
-        private char m_Char;
-        private int m_Score = 2;
-        private bool m_IsComputer = false;
-        private static readonly Random random = new Random();
+        private char m_Disc;
+        private int m_Score;
+        private bool m_IsMyTurn;
+        private bool m_IsComputer;
+        private static readonly Random sr_Random = new Random();
 
-        public Player(string i_PlayerName, char i_PlayerDisc, bool i_IsComputer = false)
+        public Player(string i_Name, char i_Disc, bool i_IsComputer = false)
         {
-            m_Name = i_PlayerName;
-            m_Char = i_PlayerDisc;
+            m_Name = i_IsComputer ? "Computer" : i_Name;
+            m_Disc = i_Disc;
+            m_Score = 2;
+            m_IsMyTurn = false;
             m_IsComputer = i_IsComputer;
-            if (m_IsComputer) m_Name = "Computer";
         }
 
-        public string PlayerName
+        public string Name
         {
-            get { return m_Name; }
+            get => m_Name;
         }
-        public char PlayerDisc
+
+        public char Disc
         {
-            get { return m_Char; }
+            get => m_Disc;
         }
-        public int PlayerScore
+
+        public int Score
         {
-            get { return m_Score; }
-            set { m_Score = value; }
+            get => m_Score;
+            set => m_Score = value;
         }
-        public bool IsComputer
-        {
-            get { return m_IsComputer; }
-        }
+
         public bool IsMyTurn
         {
-            get { return m_IsMyTurn; }
-            set { m_IsMyTurn = value; }
+            get => m_IsMyTurn;
+            set => m_IsMyTurn = value;
         }
 
-        public (int rowIndex, int colIndex) GetMove(string i_UserCellChoice = "", List<(int, int)> i_ValidMoves = null)
+        public bool IsComputer
         {
-            (int rowIndex, int colIndex) move = (-1, -1);
-
-            if (this.IsComputer)
-            {
-                move = getComputerMove(i_ValidMoves);
-            }
-            else
-            {
-                if (i_UserCellChoice.Length >= 2 && Char.IsLetter(i_UserCellChoice, 0) && int.TryParse(i_UserCellChoice.Substring(1), out int row))
-                {
-                    move = getHumanMove(i_UserCellChoice);
-                }
-            }
-
-            return move;
+            get => m_IsComputer;
         }
 
-        private (int rowIndex, int colIndex) getComputerMove(List<(int, int)> i_ValidMoves)
+        public (int rowIndex, int colIndex) GetMove(List<(int, int)> i_ValidMoves)
         {
-            (int rowIndex, int colIndex) move = (-1, -1);
-
-            if (i_ValidMoves.Count > 0)
+            if (m_IsComputer && i_ValidMoves.Count > 0)
             {
-                move = i_ValidMoves[random.Next(i_ValidMoves.Count)];
+                return i_ValidMoves[sr_Random.Next(i_ValidMoves.Count)];
             }
 
-            return move;
-        }
-
-        private (int rowIndex, int colIndex) getHumanMove(string i_UserCellChoice)
-        {
-            char columnLetter = char.ToUpper(i_UserCellChoice[0]);
-            Board.eBoardColumn columnEnum;
-            Enum.TryParse(columnLetter.ToString(), out columnEnum);
-            int colIndex = (int)columnEnum;
-            int rowIndex = int.Parse(i_UserCellChoice.Substring(1)) - 1;
-
-            return (rowIndex, colIndex);
+            return (-1, -1); 
         }
     }
 }

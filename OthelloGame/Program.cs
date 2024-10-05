@@ -1,13 +1,18 @@
 ﻿using System;
+using System.Windows.Forms;
 
-namespace Othello
+namespace OthelloWinForms
 {
-    class Program
+    static class Program
     {
-        static void Main(string[] args)
+        [STAThread]
+        static void Main()
         {
-            OthelloGame.InitializeGame();
-            Console.ReadLine();
+            Application.EnableVisualStyles();
+            Application.SetCompatibleTextRenderingDefault(false);
+
+            FormSettings settingsForm = new FormSettings();
+            Application.Run(settingsForm);
         }
     }
 }
