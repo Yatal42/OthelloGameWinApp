@@ -15,9 +15,15 @@ namespace OthelloWinForms
             InitializeBoard();
         }
 
-        public int Size => r_Size;
+        public int Size
+        {
+            get => r_Size;
+        }
 
-        public char[,] BoardArray => r_BoardArray;
+        public char[,] BoardArray
+        {     
+            get  => r_BoardArray;
+        }
 
         public void InitializeBoard()
         {
@@ -29,10 +35,10 @@ namespace OthelloWinForms
                 }
             }
 
-            SetStartingPosition();
+            setStartingPosition();
         }
 
-        private void SetStartingPosition()
+        private void setStartingPosition()
         {
             int mid = r_Size / 2;
 

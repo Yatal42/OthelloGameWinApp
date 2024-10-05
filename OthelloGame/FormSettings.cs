@@ -6,30 +6,32 @@ namespace OthelloWinForms
     public partial class FormSettings : Form
     {
         private int m_BoardSize = 6;
-        public int BoardSize
-        {
-            get { return m_BoardSize; }
-        }
-
         private bool m_IsAgainstComputer = true;
-        public bool IsAgainstComputer
-        {
-            get { return m_IsAgainstComputer; }
-        }
 
         public FormSettings()
         {
             InitializeComponent();
             updateBoardSizeLabel();
         }
+        public int BoardSize
+        {
+            get { return m_BoardSize; }
+        }
+
+        public bool IsAgainstComputer
+        {
+            get { return m_IsAgainstComputer; }
+        }
 
         private void buttonBoardSize_Click(object sender, EventArgs e)
         {
             m_BoardSize += 2;
+
             if (m_BoardSize > 12)
             {
                 m_BoardSize = 6;
             }
+
             updateBoardSizeLabel();
         }
 

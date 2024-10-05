@@ -21,11 +21,30 @@ namespace OthelloWinForms
             m_CurrentPlayer.IsMyTurn = true;
         }
 
-        public Board GameBoard => r_Board;
-        public Player Player1 => r_Player1;
-        public Player Player2 => r_Player2;
-        public Player CurrentPlayer => m_CurrentPlayer;
-        public bool IsGameOver => m_GameOver;
+        public Board GameBoard
+        {
+            get => r_Board;
+        }
+
+        public Player Player1
+        {
+            get => r_Player1;
+        }
+
+        public Player Player2
+        {
+            get => r_Player2;
+        }
+
+        public Player CurrentPlayer
+        {
+            get => m_CurrentPlayer;
+        }
+
+        public bool IsGameOver 
+        {
+            get => m_GameOver;
+        }
 
         public List<(int, int)> GetValidMoves(Player i_Player)
         {
@@ -47,11 +66,7 @@ namespace OthelloWinForms
 
         public bool IsValidMove(int i_Row, int i_Col, Player i_Player)
         {
-            if (!r_Board.IsInBounds(i_Row, i_Col) || r_Board.BoardArray[i_Row, i_Col] != '*')
-            {
-                return false;
-            }
-
+            bool isValid= false;
             char opponentDisc = i_Player.Disc == 'O' ? 'X' : 'O';
 
             for (int deltaRow = -1; deltaRow <= 1; deltaRow++)
@@ -62,13 +77,18 @@ namespace OthelloWinForms
                     {
                         if (CheckDirection(i_Row, i_Col, deltaRow, deltaCol, i_Player.Disc, opponentDisc, false))
                         {
-                            return true;
+                            isValid = true;
                         }
                     }
                 }
             }
 
-            return false;
+            if (!r_Board.IsInBounds(i_Row, i_Col) || r_Board.BoardArray[i_Row, i_Col] != '*')
+            {
+                isValid = false;
+            }
+
+            return isValid;
         }
 
         private bool CheckDirection(int i_Row, int i_Col, int i_DeltaRow, int i_DeltaCol, char i_PlayerDisc, char i_OpponentDisc, bool i_ShouldFlip)
