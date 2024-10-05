@@ -7,39 +7,36 @@ namespace OthelloWinForms
 {
     public partial class FormGame : Form
     {
-        private readonly GameManager m_GameManager;
-        private readonly PictureBox[,] m_BoardPictureBoxes;
+        private readonly GameManager r_GameManager;
+        private readonly PictureBox[,] r_BoardPictureBoxes;
 
-        public FormGame(int boardSize, bool isAgainstComputer)
+        public FormGame(int i_boardSize, bool i_isAgainstComputer)
         {
             InitializeComponent();
-            m_GameManager = new GameManager(boardSize, isAgainstComputer);
-            m_BoardPictureBoxes = new PictureBox[boardSize, boardSize];
-            initializeBoardUI(boardSize);
+            r_GameManager = new GameManager(i_boardSize, i_isAgainstComputer);
+            r_BoardPictureBoxes = new PictureBox[i_boardSize, i_boardSize];
 
-            // Subscribe to the DiscPlaced event
-            m_GameManager.GameBoard.DiscPlaced += onDiscPlaced;
-
-            // Update the display according to the initial state
+            initializeBoardUI(i_boardSize);
+            r_GameManager.GameBoard.DiscPlaced += onDiscPlaced;
             updateBoardDisplay();
 
-            if (m_GameManager.CurrentPlayer.IsComputer)
+            if (r_GameManager.CurrentPlayer.IsComputer)
             {
                 computerTurn();
             }
         }
 
-        private void initializeBoardUI(int boardSize)
+        private void initializeBoardUI(int i_boardSize)
         {
             int tileSize = 50;
-            int boardWidth = boardSize * tileSize;
-            int boardHeight = boardSize * tileSize;
+            int boardWidth = i_boardSize * tileSize;
+            int boardHeight = i_boardSize * tileSize;
             this.ClientSize = new Size(boardWidth + 20, boardHeight + 40);
             this.StartPosition = FormStartPosition.CenterScreen;
 
-            for (int row = 0; row < boardSize; row++)
+            for (int row = 0; row < i_boardSize; row++)
             {
-                for (int col = 0; col < boardSize; col++)
+                for (int col = 0; col < i_boardSize; col++)
                 {
                     PictureBox pictureBox = new PictureBox
                     {
@@ -50,10 +47,12 @@ namespace OthelloWinForms
                         BackColor = Color.Green,
                         SizeMode = PictureBoxSizeMode.StretchImage,
                     };
+
                     pictureBox.Click += boardPictureBox_Click;
-                    pictureBox.MouseEnter += pictureBox_MouseEnter; // Add MouseEnter event handler
-                    pictureBox.MouseLeave += pictureBox_MouseLeave; // Add MouseLeave event handler
-                    m_BoardPictureBoxes[row, col] = pictureBox;
+                    pictureBox.MouseEnter += pictureBox_MouseEnter; 
+                    pictureBox.MouseLeave += pictureBox_MouseLeave; 
+
+                    r_BoardPictureBoxes[row, col] = pictureBox;
                     this.Controls.Add(pictureBox);
                 }
             }
@@ -66,21 +65,17 @@ namespace OthelloWinForms
             int row = location.X;
             int col = location.Y;
 
-            // Check if it's a valid move for the current player
-            if (m_GameManager.IsValidMove(row, col, m_GameManager.CurrentPlayer))
+            if (r_GameManager.IsValidMove(row, col, r_GameManager.CurrentPlayer))
             {
-                pictureBox.BorderStyle = BorderStyle.Fixed3D; // Change border style to indicate hover
+                pictureBox.BorderStyle = BorderStyle.Fixed3D; 
             }
         }
 
         private void pictureBox_MouseLeave(object sender, EventArgs e)
         {
             PictureBox pictureBox = sender as PictureBox;
-
-            // Revert to default border style
             pictureBox.BorderStyle = BorderStyle.FixedSingle;
         }
-
 
         private void boardPictureBox_Click(object sender, EventArgs e)
         {
@@ -89,17 +84,17 @@ namespace OthelloWinForms
             int row = location.X;
             int col = location.Y;
 
-            if (m_GameManager.IsValidMove(row, col, m_GameManager.CurrentPlayer))
+            if (r_GameManager.IsValidMove(row, col, r_GameManager.CurrentPlayer))
             {
-                m_GameManager.MakeMove(row, col);
+                r_GameManager.MakeMove(row, col);
                 updateBoardDisplay();
-                m_GameManager.SwitchTurns();
+                r_GameManager.SwitchTurns();
 
-                if (m_GameManager.IsGameOver)
+                if (r_GameManager.IsGameOver)
                 {
                     declareWinner();
                 }
-                else if (m_GameManager.CurrentPlayer.IsComputer)
+                else if (r_GameManager.CurrentPlayer.IsComputer)
                 {
                     computerTurn();
                 }
@@ -116,16 +111,16 @@ namespace OthelloWinForms
 
         private void updateBoardDisplay()
         {
-            char[,] boardArray = m_GameManager.GameBoard.BoardArray;
+            char[,] boardArray = r_GameManager.GameBoard.BoardArray;
             int boardSize = boardArray.GetLength(0);
-            Player currentPlayer = m_GameManager.CurrentPlayer;
+            Player currentPlayer = r_GameManager.CurrentPlayer;
 
             for (int row = 0; row < boardSize; row++)
             {
                 for (int col = 0; col < boardSize; col++)
                 {
                     char disc = boardArray[row, col];
-                    PictureBox pictureBox = m_BoardPictureBoxes[row, col];
+                    PictureBox pictureBox = r_BoardPictureBoxes[row, col];
 
                     if (disc == 'O')
                     {
@@ -145,11 +140,10 @@ namespace OthelloWinForms
                     {
                         pictureBox.Image = null;
 
-                        if (m_GameManager.IsValidMove(row, col, currentPlayer))
+                        if (r_GameManager.IsValidMove(row, col, currentPlayer))
                         {
                             pictureBox.Cursor = Cursors.Hand;
                             pictureBox.BackColor = Color.MediumSpringGreen;
-                            // The border will be handled in the MouseEnter and MouseLeave events
                         }
                         else
                         {
@@ -164,15 +158,15 @@ namespace OthelloWinForms
             this.Text = $"Othello - {currentPlayer.Name}'s Turn";
         }
 
-        private void onDiscPlaced(int rowIndex, int colIndex, char playerDisc)
+        private void onDiscPlaced(int i_rowIndex, int i_colIndex, char i_playerDisc)
         {
-            PictureBox pictureBox = m_BoardPictureBoxes[rowIndex, colIndex];
+            PictureBox pictureBox = r_BoardPictureBoxes[i_rowIndex, i_colIndex];
 
-            if (playerDisc == 'O')
+            if (i_playerDisc == 'O')
             {
                 pictureBox.Image = Properties.Resources.CoinYellow;
             }
-            else if (playerDisc == 'X')
+            else if (i_playerDisc == 'X')
             {
                 pictureBox.Image = Properties.Resources.CoinRed;
             }
@@ -182,28 +176,29 @@ namespace OthelloWinForms
 
         private void declareWinner()
         {
-            Player winner = m_GameManager.GetWinner();
-            int blackScore = m_GameManager.Player1.Score;
-            int whiteScore = m_GameManager.Player2.Score;
+            Player winner = r_GameManager.GetWinner();
+            int blackScore = r_GameManager.Player1.Score;
+            int whiteScore = r_GameManager.Player2.Score;
             string message;
 
             if (winner != null)
             {
-                message = $"{winner.Name} wins!\nFinal score is {blackScore}/{whiteScore}";
+                message = $"{winner.Name} wins! with {winner.Score}" + Environment.NewLine + $"Final score is {blackScore}|{whiteScore}";
+
             }
             else
             {
-                message = $"It's a tie!\nFinal score is {blackScore}/{whiteScore}";
+                message = $"It's a tie!" + Environment.NewLine + $"Final score is {blackScore}|{whiteScore}";
             }
 
-            DialogResult result = MessageBox.Show($"{message}\nWould you like to play again?", "Othello", MessageBoxButtons.YesNo);
+            DialogResult result = MessageBox.Show($"{message}" + Environment.NewLine + "Would you like to play again?", "Othello", MessageBoxButtons.YesNo);
 
             if (result == DialogResult.Yes)
             {
-                m_GameManager.ResetGame();
+                r_GameManager.ResetGame();
                 updateBoardDisplay();
 
-                if (m_GameManager.CurrentPlayer.IsComputer)
+                if (r_GameManager.CurrentPlayer.IsComputer)
                 {
                     computerTurn();
                 }
@@ -219,20 +214,20 @@ namespace OthelloWinForms
             Application.DoEvents();
             System.Threading.Thread.Sleep(500);
 
-            Player computerPlayer = m_GameManager.CurrentPlayer;
-            List<(int, int)> validMoves = m_GameManager.GetValidMoves(computerPlayer);
+            Player computerPlayer = r_GameManager.CurrentPlayer;
+            List<(int, int)> validMoves = r_GameManager.GetValidMoves(computerPlayer);
 
             if (validMoves.Count == 0)
             {
                 MessageBox.Show("Computer has no valid moves.", "No Valid Moves", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                m_GameManager.SwitchTurns();
+                r_GameManager.SwitchTurns();
                 updateBoardDisplay();
 
-                if (m_GameManager.IsGameOver)
+                if (r_GameManager.IsGameOver)
                 {
                     declareWinner();
                 }
-                else if (m_GameManager.CurrentPlayer.IsComputer)
+                else if (r_GameManager.CurrentPlayer.IsComputer)
                 {
                     computerTurn();
                 }
@@ -246,15 +241,15 @@ namespace OthelloWinForms
 
             var move = computerPlayer.GetMove(validMoves);
 
-            m_GameManager.MakeMove(move.rowIndex, move.colIndex);
+            r_GameManager.MakeMove(move.rowIndex, move.colIndex);
             updateBoardDisplay();
-            m_GameManager.SwitchTurns();
+            r_GameManager.SwitchTurns();
 
-            if (m_GameManager.IsGameOver)
+            if (r_GameManager.IsGameOver)
             {
                 declareWinner();
             }
-            else if (m_GameManager.CurrentPlayer.IsComputer)
+            else if (r_GameManager.CurrentPlayer.IsComputer)
             {
                 computerTurn();
             }

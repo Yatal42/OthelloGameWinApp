@@ -20,9 +20,12 @@
             // FormGame
             // 
             this.ClientSize = new System.Drawing.Size(284, 261);
+            this.MaximizeBox = false;
+            this.MinimizeBox = false;
             this.Name = "FormGame";
             this.Text = "Othello";
             this.ResumeLayout(false);
+
         }
     }
 }
