@@ -10,7 +10,6 @@ namespace OthelloWinForms
         {
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
-
             FormSettings settingsForm = new FormSettings();
             Application.Run(settingsForm);
         }

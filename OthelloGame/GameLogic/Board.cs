@@ -41,7 +41,6 @@ namespace OthelloWinForms
         private void setStartingPosition()
         {
             int mid = r_Size / 2;
-
             PlaceDisc(mid - 1, mid - 1, 'X');
             PlaceDisc(mid - 1, mid, 'O');
             PlaceDisc(mid, mid - 1, 'O');

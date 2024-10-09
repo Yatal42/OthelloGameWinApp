@@ -1,5 +1,5 @@
-﻿using System.Collections.Generic;
-using System.Windows.Forms;
+﻿using System;
+using System.Collections.Generic;
 
 namespace OthelloWinForms
 {
@@ -10,13 +10,14 @@ namespace OthelloWinForms
         private readonly Player r_Player2;
         private Player m_CurrentPlayer;
         private bool m_GameOver = false;
+        public event Action<string> NoValidMoves;
+        public event Action<Player> GameOverEvent;
 
         public GameManager(int i_BoardSize, bool i_IsAgainstComputer)
         {
             r_Board = new Board(i_BoardSize);
             r_Player1 = new Player("Yellow", 'O');
             r_Player2 = new Player("Red", 'X', i_IsAgainstComputer);
-
             m_CurrentPlayer = r_Player1;
             m_CurrentPlayer.IsMyTurn = true;
         }
@@ -69,13 +70,13 @@ namespace OthelloWinForms
             bool isValid= false;
             char opponentDisc = i_Player.Disc == 'O' ? 'X' : 'O';
 
-            for (int deltaRow = -1; deltaRow <= 1; deltaRow++)
+            for (int rowDirection = -1; rowDirection <= 1; rowDirection++)
             {
-                for (int deltaCol = -1; deltaCol <= 1; deltaCol++)
+                for (int colDirection = -1; colDirection <= 1; colDirection++)
                 {
-                    if (deltaRow != 0 || deltaCol != 0)
+                    if (rowDirection != 0 || colDirection != 0)
                     {
-                        if (CheckDirection(i_Row, i_Col, deltaRow, deltaCol, i_Player.Disc, opponentDisc, false))
+                        if (checkDirection(i_Row, i_Col, rowDirection, colDirection, i_Player.Disc, opponentDisc, false))
                         {
                             isValid = true;
                         }
@@ -91,11 +92,18 @@ namespace OthelloWinForms
             return isValid;
         }
 
-        private bool CheckDirection(int i_Row, int i_Col, int i_DeltaRow, int i_DeltaCol, char i_PlayerDisc, char i_OpponentDisc, bool i_ShouldFlip)
+        private bool checkDirection(int i_Row,
+                                    int i_Col,
+                                    int i_RowDirection,
+                                    int i_ColDirection,
+                                    char i_PlayerDisc,
+                                    char i_OpponentDisc,
+                                    bool i_ShouldFlip)
         {
-            int row = i_Row + i_DeltaRow;
-            int col = i_Col + i_DeltaCol;
+            int row = i_Row + i_RowDirection;
+            int col = i_Col + i_ColDirection;
             bool hasOpponentBetween = false;
+            bool result = false;
 
             while (r_Board.IsInBounds(row, col))
             {
@@ -111,10 +119,11 @@ namespace OthelloWinForms
                     {
                         if (i_ShouldFlip)
                         {
-                            FlipDiscsInDirection(i_Row, i_Col, i_DeltaRow, i_DeltaCol, i_PlayerDisc);
+                            flipDiscsInDirection(i_Row, i_Col, i_RowDirection, i_ColDirection, i_PlayerDisc);
                         }
-                        return true;
+                        result = true;
                     }
+
                     break;
                 }
                 else
@@ -122,28 +131,31 @@ namespace OthelloWinForms
                     break;
                 }
 
-                row += i_DeltaRow;
-                col += i_DeltaCol;
+                row += i_RowDirection;
+                col += i_ColDirection;
             }
 
-            return false;
+            return result;
         }
 
-        private void FlipDiscsInDirection(int i_Row, int i_Col, int i_DeltaRow, int i_DeltaCol, char i_PlayerDisc)
+        private void flipDiscsInDirection(int i_Row, int i_Col,
+                                          int i_RowDirection,
+                                          int i_ColDirection,
+                                          char i_PlayerDisc)
         {
-            int row = i_Row + i_DeltaRow;
-            int col = i_Col + i_DeltaCol;
+            int row = i_Row + i_RowDirection;
+            int col = i_Col + i_ColDirection;
 
             while (r_Board.BoardArray[row, col] != i_PlayerDisc)
             {
                 r_Board.PlaceDisc(row, col, i_PlayerDisc);
-                UpdateScores(i_PlayerDisc);
-                row += i_DeltaRow;
-                col += i_DeltaCol;
+                updateScores(i_PlayerDisc);
+                row += i_RowDirection;
+                col += i_ColDirection;
             }
         }
 
-        private void UpdateScores(char i_PlayerDisc)
+        private void updateScores(char i_PlayerDisc)
         {
             if (i_PlayerDisc == r_Player1.Disc)
             {
@@ -162,13 +174,13 @@ namespace OthelloWinForms
             char opponentDisc = m_CurrentPlayer.Disc == 'O' ? 'X' : 'O';
             bool validMove = false;
 
-            for (int deltaRow = -1; deltaRow <= 1; deltaRow++)
+            for (int rowDirection = -1; rowDirection <= 1; rowDirection++)
             {
-                for (int deltaCol = -1; deltaCol <= 1; deltaCol++)
+                for (int colDirection = -1; colDirection <= 1; colDirection++)
                 {
-                    if (deltaRow != 0 || deltaCol != 0)
+                    if (rowDirection != 0 || colDirection != 0)
                     {
-                        if (CheckDirection(i_Row, i_Col, deltaRow, deltaCol, m_CurrentPlayer.Disc, opponentDisc, true))
+                        if (checkDirection(i_Row, i_Col, rowDirection, colDirection, m_CurrentPlayer.Disc, opponentDisc, true))
                         {
                             validMove = true;
                         }
@@ -195,28 +207,30 @@ namespace OthelloWinForms
             }
             else if (GetValidMoves(m_CurrentPlayer).Count > 0)
             {
-                MessageBox.Show($"{otherPlayer.Name} has no valid moves. {m_CurrentPlayer.Name} plays again.", "No Valid Moves", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                NoValidMoves?.Invoke($"{otherPlayer.Name} has no valid moves. {m_CurrentPlayer.Name} plays again.");
             }
             else
             {
                 m_GameOver = true;
+                GameOverEvent?.Invoke(GetWinner());
+
             }
         }
 
         public Player GetWinner()
         {
+            Player winner = null;
+
             if (r_Player1.Score > r_Player2.Score)
             {
-                return r_Player1;
+                winner = r_Player1;
             }
             else if (r_Player2.Score > r_Player1.Score)
             {
-                return r_Player2;
+                winner = r_Player2;
             }
-            else
-            {
-                return null; 
-            }
+
+            return winner;
         }
 
         public void ResetGame()

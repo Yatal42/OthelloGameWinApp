@@ -50,12 +50,10 @@ namespace OthelloWinForms
 
         public (int rowIndex, int colIndex) GetMove(List<(int, int)> i_ValidMoves)
         {
-            if (m_IsComputer && i_ValidMoves.Count > 0)
-            {
-                return i_ValidMoves[sr_Random.Next(i_ValidMoves.Count)];
-            }
-
-            return (-1, -1); 
+            return (m_IsComputer && i_ValidMoves.Count > 0)
+                ? i_ValidMoves[sr_Random.Next(i_ValidMoves.Count)]
+                : (-1, -1);
         }
+
     }
 }

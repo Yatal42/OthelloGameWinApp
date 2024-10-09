@@ -26,6 +26,7 @@
             this.Text = "Othello";
             this.ResumeLayout(false);
 
+
         }
     }
 }
